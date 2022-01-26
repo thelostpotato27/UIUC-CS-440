@@ -143,17 +143,29 @@ def naiveBayes(train_set, train_labels, dev_set, laplace=0.001, pos_prior=0.8, s
     dev_labels = []
     pos_vocab, neg_vocab = create_word_maps_uni(train_set, train_labels, max_size=None)
 
+    # pos_max = 0                               # thought I needed to norm the output of the pos and neg vocab, didnt work
+    # for key in pos_vocab:
+    #     pos_max = pos_max + pos_vocab[key]
+    # for key in pos_vocab:
+    #     pos_vocab[key] = pos_vocab[key] / pos_max
+    
+
+    # neg_max = 0  
+    # for key in neg_vocab:
+    #     neg_max = neg_max + neg_vocab[key]
+    # for key in neg_vocab:
+    #     neg_vocab[key] = neg_vocab[key] / neg_max
+
     for i in range(len(dev_set)):
         email = dev_set[i]
-        ham = 1 - pos_prior
-        spam = pos_prior
+        ham = pos_prior
+        spam = (1-pos_prior)
         for x in email:
-            # print(x)
-            # print(pos_vocab[x])
             if x in pos_vocab:
-                ham = ham * pos_vocab[x]
+                ham *= pos_vocab[x]
             if x in neg_vocab:
-                spam = spam * neg_vocab[x]
+                spam *= neg_vocab[x]
+
         if ham > spam:
             dev_labels.append(1)
         else:
@@ -210,7 +222,7 @@ def bigramBayes(train_set, train_labels, dev_set, unigram_laplace=0.001, bigram_
         max = (ham_single + spam_single)
         ham_single /= max
         spam_single /= max
-        print(ham_single)
+        # print(ham_single)
         for i in range(1,len(email)):
             x = email[i-1] + email[i]
             if x in pos_vocab:
@@ -220,7 +232,7 @@ def bigramBayes(train_set, train_labels, dev_set, unigram_laplace=0.001, bigram_
         max = (ham_bi + spam_bi)
         ham_bi /= max
         spam_bi /= max
-        print(ham_bi)
+        # print(ham_bi)
         ham = ham_single**(1-bigram_lambda) * ham_bi**(bigram_lambda)
         spam = spam_single**(1-bigram_lambda) * spam_bi**(bigram_lambda)
 
