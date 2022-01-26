@@ -50,11 +50,27 @@ def create_word_maps_uni(X, y, max_size=None):
         keys: words 
         values: number of times the word appears 
     """
-    #print(len(X),'X')
+    
+    # print(len(y),'y')
     pos_vocab = {}
     neg_vocab = {}
-    ##TODO:
-    raise RuntimeError("Replace this line with your code!")
+
+    for i in range(len(y)):
+        if y[i]:
+            for x in X[i]:
+                if x in pos_vocab:
+                    pos_vocab[x] += 1
+                else:
+                    pos_vocab[x] = 1
+        else:
+            for x in X[i]:
+                if x in neg_vocab:
+                    neg_vocab[x] += 1
+                else:
+                    neg_vocab[x] = 1
+    # print(pos_vocab['the'])
+    # ##TODO:
+    # raise RuntimeError(print(len(X),'X'))
     return dict(pos_vocab), dict(neg_vocab)
 
 
@@ -74,11 +90,26 @@ def create_word_maps_bi(X, y, max_size=None):
         keys: words 
         values: number of times the word pair appears 
     """
-    #print(len(X),'X')
+    # print(X[0],'X')
     pos_vocab = {}
     neg_vocab = {}
+
+    for i in range(len(y)):
+        if y[i]:
+            for x in X[i]:
+                if x in pos_vocab:
+                    pos_vocab[x] += 1
+                else:
+                    pos_vocab[x] = 1
+        else:
+            for x in X[i]:
+                if x in neg_vocab:
+                    neg_vocab[x] += 1
+                else:
+                    neg_vocab[x] = 1
+
     ##TODO:
-    raise RuntimeError("Replace this line with your code!")
+    # raise RuntimeError("Replace this line with your code!")
     return dict(pos_vocab), dict(neg_vocab)
 
 
@@ -109,12 +140,31 @@ def naiveBayes(train_set, train_labels, dev_set, laplace=0.001, pos_prior=0.8, s
     Outputs:
     dev_labels = the most probable labels (1 or 0) for every email in the dev set
     '''
+    dev_labels = []
+    pos_vocab, neg_vocab = create_word_maps_uni(train_set, train_labels, max_size=None)
+
+    for i in range(len(dev_set)):
+        email = dev_set[i]
+        ham = 1 - pos_prior
+        spam = pos_prior
+        for x in email:
+            # print(x)
+            # print(pos_vocab[x])
+            if x in pos_vocab:
+                ham = ham * pos_vocab[x]
+            if x in neg_vocab:
+                spam = spam * neg_vocab[x]
+        if ham > spam:
+            dev_labels.append(1)
+        else:
+            dev_labels.append(0)
+
     # Keep this in the provided template
     print_paramter_vals(laplace,pos_prior)
 
-    raise RuntimeError("Replace this line with your code!")
+    #raise RuntimeError("Replace this line with your code!")
 
-    return []
+    return dev_labels
 
 
 # Keep this in the provided template
@@ -142,10 +192,47 @@ def bigramBayes(train_set, train_labels, dev_set, unigram_laplace=0.001, bigram_
     Outputs:
     dev_labels = the most probable labels (1 or 0) for every email in the dev set
     '''
+    dev_labels = []
+    pos_vocab, neg_vocab = create_word_maps_bi(train_set, train_labels, max_size=None)
+
+    for i in range(len(dev_set)):
+        email = dev_set[i]
+        ham_single = ham_bi = 1 - pos_prior
+        spam_single = spam_bi = pos_prior
+        
+        for x in email:
+            # print(x)
+            # print(pos_vocab[x])
+            if x in pos_vocab:
+                ham_single = ham_single * pos_vocab[x]
+            if x in neg_vocab:
+                spam_single = spam_single * neg_vocab[x]
+        max = (ham_single + spam_single)
+        ham_single /= max
+        spam_single /= max
+        print(ham_single)
+        for i in range(1,len(email)):
+            x = email[i-1] + email[i]
+            if x in pos_vocab:
+                ham_bi = ham_bi * pos_vocab[x]
+            if x in neg_vocab:
+                spam_bi = spam_bi * neg_vocab[x]
+        max = (ham_bi + spam_bi)
+        ham_bi /= max
+        spam_bi /= max
+        print(ham_bi)
+        ham = ham_single**(1-bigram_lambda) * ham_bi**(bigram_lambda)
+        spam = spam_single**(1-bigram_lambda) * spam_bi**(bigram_lambda)
+
+        if ham > spam:
+            dev_labels.append(1)
+        else:
+            dev_labels.append(0)
+
     print_paramter_vals_bigram(unigram_laplace,bigram_laplace,bigram_lambda,pos_prior)
 
     max_vocab_size = None
 
-    raise RuntimeError("Replace this line with your code!")
+    # raise RuntimeError("Replace this line with your code!")
 
-    return []
+    return dev_labels
