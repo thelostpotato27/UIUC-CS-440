@@ -101,12 +101,25 @@ def create_word_maps_bi(X, y, max_size=None):
                     pos_vocab[x] += 1
                 else:
                     pos_vocab[x] = 1
+            for j in range(1, len(X[i])):
+                bi_group = X[i][j-1] + " " + X[i][j]
+                if bi_group in pos_vocab:
+                    pos_vocab[bi_group] += 1
+                else:
+                    pos_vocab[bi_group] = 1
         else:
             for x in X[i]:
                 if x in neg_vocab:
                     neg_vocab[x] += 1
                 else:
                     neg_vocab[x] = 1
+            for j in range(2, len(X[i])):
+                bi_group = X[i][j-1] + " " + X[i][j]
+                if bi_group in neg_vocab:
+                    neg_vocab[bi_group] += 1
+                else:
+                    neg_vocab[bi_group] = 1
+
 
     ##TODO:
     # raise RuntimeError("Replace this line with your code!")
@@ -143,28 +156,35 @@ def naiveBayes(train_set, train_labels, dev_set, laplace=0.001, pos_prior=0.8, s
     dev_labels = []
     pos_vocab, neg_vocab = create_word_maps_uni(train_set, train_labels, max_size=None)
 
-    # pos_max = 0                               # thought I needed to norm the output of the pos and neg vocab, didnt work
-    # for key in pos_vocab:
-    #     pos_max = pos_max + pos_vocab[key]
-    # for key in pos_vocab:
-    #     pos_vocab[key] = pos_vocab[key] / pos_max
+    pos_max = 0
+    pos_key = 0
+    for key in pos_vocab:
+        pos_max += pos_vocab[key]
+        pos_key += 1
     
+    neg_max = 0
+    neg_key = 0
+    for key in neg_vocab:
+        neg_max = neg_max + neg_vocab[key]
+        neg_key += 1
 
-    # neg_max = 0  
-    # for key in neg_vocab:
-    #     neg_max = neg_max + neg_vocab[key]
-    # for key in neg_vocab:
-    #     neg_vocab[key] = neg_vocab[key] / neg_max
 
     for i in range(len(dev_set)):
         email = dev_set[i]
-        ham = pos_prior
-        spam = (1-pos_prior)
+        ham = math.log(pos_prior)
+        spam = math.log(1-pos_prior)
+
         for x in email:
+            temp_pos = 0
+            temp_neg = 0
             if x in pos_vocab:
-                ham *= pos_vocab[x]
+                temp_pos = pos_vocab[x]
+            ham += math.log((temp_pos + laplace)/(pos_max + laplace*(1 + pos_key)))
+
             if x in neg_vocab:
-                spam *= neg_vocab[x]
+                temp_neg = neg_vocab[x]
+            spam += math.log((temp_neg + laplace)/(neg_max + laplace*(1 + neg_key)))
+
 
         if ham > spam:
             dev_labels.append(1)
@@ -207,34 +227,75 @@ def bigramBayes(train_set, train_labels, dev_set, unigram_laplace=0.001, bigram_
     dev_labels = []
     pos_vocab, neg_vocab = create_word_maps_bi(train_set, train_labels, max_size=None)
 
+    uni_pos_max = 0
+    uni_pos_key = 0
+    bi_pos_max = 0
+    bi_pos_key = 0
+    for key in pos_vocab:
+        if ' ' in key:
+            bi_pos_max += pos_vocab[key]
+            bi_pos_key += 1
+        else:
+            uni_pos_max += pos_vocab[key]
+            uni_pos_key += 1
+    
+    uni_neg_max = 0
+    uni_neg_key = 0
+    bi_neg_max = 0
+    bi_neg_key = 0
+    for key in neg_vocab:
+        if ' ' in key:
+            bi_neg_max += neg_vocab[key]
+            bi_neg_key += 1
+        else:
+            uni_neg_max += neg_vocab[key]
+            uni_neg_key += 1
+
+
+
     for i in range(len(dev_set)):
         email = dev_set[i]
-        ham_single = ham_bi = 1 - pos_prior
-        spam_single = spam_bi = pos_prior
-        
+        uni_ham = math.log(pos_prior)
+        uni_spam = math.log(1-pos_prior)
+
         for x in email:
-            # print(x)
-            # print(pos_vocab[x])
+            temp_pos = 0
+            temp_neg = 0
             if x in pos_vocab:
-                ham_single = ham_single * pos_vocab[x]
+                temp_pos = pos_vocab[x]
+            uni_ham += math.log((temp_pos + unigram_laplace)/(uni_pos_max + unigram_laplace*(1 + uni_pos_key)))
+
             if x in neg_vocab:
-                spam_single = spam_single * neg_vocab[x]
-        max = (ham_single + spam_single)
-        ham_single /= max
-        spam_single /= max
-        # print(ham_single)
-        for i in range(1,len(email)):
-            x = email[i-1] + email[i]
-            if x in pos_vocab:
-                ham_bi = ham_bi * pos_vocab[x]
-            if x in neg_vocab:
-                spam_bi = spam_bi * neg_vocab[x]
-        max = (ham_bi + spam_bi)
-        ham_bi /= max
-        spam_bi /= max
-        # print(ham_bi)
-        ham = ham_single**(1-bigram_lambda) * ham_bi**(bigram_lambda)
-        spam = spam_single**(1-bigram_lambda) * spam_bi**(bigram_lambda)
+                temp_neg = neg_vocab[x]
+            uni_spam += math.log((temp_neg + unigram_laplace)/(uni_neg_max + unigram_laplace*(1 + uni_neg_key)))
+        
+        uni_ham *= (1-bigram_lambda)
+        uni_spam *= (1-bigram_lambda)
+
+
+        bi_ham = math.log(pos_prior)
+        bi_spam = math.log(1-pos_prior)
+
+        for j in range(1,len(email)):
+            bi_word = email[j-1] + " " + email[j]
+            temp_pos = 0
+            temp_neg = 0
+            if bi_word in pos_vocab:
+                temp_pos = pos_vocab[bi_word]
+            bi_ham += math.log((temp_pos + bigram_laplace)/(uni_pos_max + bi_pos_max + bigram_laplace*(1 + uni_pos_key + bi_pos_key)))
+
+            if bi_word in neg_vocab:
+                temp_neg = neg_vocab[bi_word]
+            bi_spam += math.log((temp_neg + bigram_laplace)/(uni_neg_max + bi_neg_max + bigram_laplace*(1 + uni_neg_key + bi_neg_key)))
+        
+        bi_ham *= bigram_lambda
+        bi_spam *= bigram_lambda
+
+        ham = uni_ham + bi_ham
+        spam = uni_spam + bi_spam
+
+        # print("spam",  spam)
+        # print("ham",  ham)
 
         if ham > spam:
             dev_labels.append(1)
