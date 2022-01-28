@@ -113,7 +113,7 @@ def create_word_maps_bi(X, y, max_size=None):
                     neg_vocab[x] += 1
                 else:
                     neg_vocab[x] = 1
-            for j in range(2, len(X[i])):
+            for j in range(1, len(X[i])):
                 bi_group = X[i][j-1] + " " + X[i][j]
                 if bi_group in neg_vocab:
                     neg_vocab[bi_group] += 1
