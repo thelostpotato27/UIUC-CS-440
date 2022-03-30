@@ -26,7 +26,7 @@ files and classes when code is run, so be careful to not modify anything else.
 # Note that if you want to test one of your search methods, please make sure to return a blank list
 #  for the other search methods otherwise the grader will not crash.
 from collections import deque
-from heapq import heappush
+from heapq import heappop, heappush
 class MST:
     def __init__(self, objectives):
         self.elements = {key: None for key in objectives}
@@ -120,15 +120,33 @@ def astar_single(maze):
     @return path: a list of tuples containing the coordinates of each state in the computed path
     """
     maze_A_star = []
+    heappush(maze_A_star, (2*maze.size.x + 2*maze.size.y, 0, (start)))
     start = maze.start
     finish = maze.waypoints[0]
     visited_points = [[0 for x in range(maze.size.x)] for y in range(maze.size.y)]
     distance = abs(start[0] - finish[0][0]) + abs(start[1] - finish[0][1])
-    heappush((distance, start))
-    while maze_A_star[0][0] != 0:
-        
+    heappush(maze_A_star, (distance, 0, (start)))
+    while maze_A_star[0][0] != maze_A_star[0][1]:
+        neighbors = maze.neighbors(maze_A_star[0][2][0][0], maze_A_star[0][2][0][0])
+        visited_points[maze_A_star[0][2][0][0]][maze_A_star[0][2][0][1]] = 1
+        trail = maze_A_star[0][2]
+        current_location = heappop(maze_A_star)
+        for elem in neighbors:
+            if visited_points[elem[0]][elem[1]] == 1:
+                continue
+            traveled = current_location[1] + 1
+            distance = abs(elem[0] - finish[0][0]) + abs(elem[1] - finish[0][1]) + traveled
+            heappush(maze_A_star, (distance, traveled, (elem, trail)))
+    answer = []
+    maze_A_star = maze_A_star[0][2]
+    while maze_A_star[0] != start:
+        answer.append(maze_A_star[0])
+        maze_A_star = maze_A_star[1]
 
-    return []
+    answer.append(maze_A_star[0])
+    answer.reverse()
+    return answer
+
 
 def astar_multiple(maze):
     """
