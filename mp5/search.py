@@ -57,29 +57,61 @@ def minimax(side, board, flags, depth):
       depth (int >=0): depth of the search (number of moves)
     '''
 
-    value, movelist, movetree = minimax_recursor(side, side, board, flags, depth)
+    value, movelist, movetree = minimax_recursor(side, side, board, flags, depth, 0)
 
+    print(side)
+    print(value)
     return value, movelist, movetree
 
 
     raise NotImplementedError("you need to write this!")
 
-def minimax_recursor(min_or_max, side, board, flags, depth):
+def minimax_recursor(min_or_max, side, board, flags, depth, correct):
     movetree = {}
     value = "temp"
     movelist = "temp"
+    value_return = "temp"
+    is_knight = 0
     for move in generateMoves(side, board, flags):
         encoded_move = encode(move[0], move[1], move[2])
 
+        # if move[0] == [2,1]:
+        #     is_knight = 1
+
         newside, newboard, newflags = makeMove(side, board, move[0], move[1], flags, move[2])
+
+        temp_value = evaluate(newboard)
+        if value == "temp":
+            value = {temp_value: [encoded_move, newside, newboard, newflags]}
         
+        value[temp_value] = [encoded_move, newside, newboard, newflags]
+        
+        if newside:
+            value_key = max(value)
+            value = {value_key: value[value_key]}
+        else:
+            value_key = min(value)
+            value = {value_key: value[value_key]}
+
+
+    temp_value, temp_movelist, temp_movetree = minimax_recursor(newside, newside, newboard, newflags, depth - 1, is_knight)
+
+
+
+
+
         if depth > 1:
-            temp_value, temp_movelist, temp_movetree = minimax_recursor(min_or_max, newside, newboard, newflags, depth - 1)
+
+
+
+            temp_value, temp_movelist, temp_movetree = minimax_recursor(newside, newside, newboard, newflags, depth - 1, is_knight)
             movetree[encoded_move] = temp_movetree
             if value == "temp":
                 value = {temp_value: temp_movelist}
                 continue
             value[temp_value] = temp_movelist
+            # print("=======================================================")
+            # print(value.keys())
 
             if min_or_max:
                 value_key = max(value)
@@ -87,14 +119,24 @@ def minimax_recursor(min_or_max, side, board, flags, depth):
             else:
                 value_key = min(value)
                 value = {value_key: value[value_key]}
-            value_return = value.keys()[0]
-            movelist = [move, value[value_return]]
+
+            # print(value.keys())
+            # print("=======================================================")
+            if correct:
+                print(value.keys())
+            for i in value:
+                value_return = i
+                movelist = [move, value[i]]
+
         else:
             movetree[encoded_move] = {}
             if value == "temp":
                 value = {evaluate(newboard): move}
             value[evaluate(newboard)] = move
 
+            # print("=======================================================")
+            # print(value.keys())
+
             if min_or_max:
                 value_key = max(value)
                 value = {value_key: value[value_key]}
@@ -102,8 +144,13 @@ def minimax_recursor(min_or_max, side, board, flags, depth):
                 value_key = min(value)
                 value = {value_key: value[value_key]}
 
-            value_return = value.keys()[0]
-            movelist = [value[value_return]]
+            # print(value.keys())
+            # print("=======================================================")
+            if correct:
+                print(value.keys())
+            for i in value:
+                value_return = i
+                movelist = [value[i]]
     
     
     return value_return, movelist, movetree
