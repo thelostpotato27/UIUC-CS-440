@@ -29,10 +29,10 @@ class TabQPolicy(QPolicy):
         self.actionsize = actionsize
         self.lr = lr
         self.gamma = gamma
-        self.model = np.zeros(self.buckets + (actionsize,)) if model is None else model
-        print("model size")
-        print(buckets, actionsize)
-        print(self.model)
+        self.model = np.zeros(self.buckets + (self.actionsize,)) if model is None else model
+        # print("model size")
+        # print(self.buckets, self.actionsize)
+        # print(self.model)
         self.Num_dict = dict()
 
     def discretize(self, obs):
@@ -57,10 +57,19 @@ class TabQPolicy(QPolicy):
         
         @return qvals: the q values for the state for each action. 
         """
+        # print("qvals check")
         discrete_state = self.discretize(states[0])
-        vals = np.zeros(3)
-        for i in range(3):
-            vals[i] = self.model[discrete_state + i]
+        # print("states")
+        # print(states[0])
+        # print(discrete_state)
+        model_shape = self.model.shape
+        vals = np.zeros((1,model_shape[-1]))
+        
+        
+        for i in range(model_shape[-1]):
+            vals[0][i] = self.model[discrete_state + (i,)]
+        # print("qvals")
+        # print(vals)
         return vals
 
 
@@ -78,18 +87,26 @@ class TabQPolicy(QPolicy):
         """
         discrete_state = self.discretize(state)
         q_vals = self.model[discrete_state+ (action,)]
+        # print("state")
+        # print(state)
+        # print("discrete states")
+        # print(discrete_state)
+        # print("q_vals")
+        # print(q_vals)
 
-        self.N_table[q_vals] = self.N_table.get(q_vals, 0) + 1
-        C = 0.01
-        self.lr = min(self.lr,C/(C+self.N_table[q_vals]))
 
         d_next_state = self.discretize(next_state)
-        
-        if (done == True) and (next_state[0] == self.env.goal_position):
-            reward = 1.0
+        # print("next_state info")
+        # print(next_state)
+        if (done == True):
             target = reward
         else:
-            target = reward+ self.gamma*max(self.model[d_next_state+ (0,)], self.model[d_next_state+ (1,)], self.model[d_next_state + (2,)])
+            # print("td step")
+            # print(self.model)
+            model_shape = self.model.shape
+            target = reward + self.gamma*max(self.model[d_next_state+ (i,)] for i in range(model_shape[-1]))
+            # for i in range(model_shape[-1]):
+            #     target = reward+ self.gamma*max(self.model[d_next_state+ (1,)])
 
         self.model[discrete_state + (action,)] = q_vals + self.lr*(target - q_vals)
         loss = (q_vals - target)**2
@@ -114,7 +131,7 @@ if __name__ == '__main__':
 
     statesize = env.observation_space.shape[0]
     actionsize = env.action_space.n
-    policy = TabQPolicy(env, buckets=(1, 1, 1, 1), actionsize=actionsize, lr=args.lr, gamma=args.gamma)
+    policy = TabQPolicy(env, buckets=(3,8,3,8), actionsize=actionsize, lr=args.lr, gamma=args.gamma)
 
     utils.qlearn(env, policy, args)
 

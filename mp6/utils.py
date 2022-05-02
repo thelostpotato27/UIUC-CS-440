@@ -20,10 +20,10 @@ def hyperparameters():
     parser = argparse.ArgumentParser()
     parser.add_argument('--episodes', type=int, default=1000, help='number of episodes to simulate per iteration')
     parser.add_argument('--trainsize', type=int, default=1000, help='number of training steps to take per iteration')
-    parser.add_argument('--epsilon', type=float, default=0.05, help='exploration parameter')
-    parser.add_argument('--gamma', type=float, default=0.99, help='discount reward factor. represents how confident a '
+    parser.add_argument('--epsilon', type=float, default=0.20, help='exploration parameter')
+    parser.add_argument('--gamma', type=float, default=0.8, help='discount reward factor. represents how confident a '
                                                                   'model should be able to predict future rewards')
-    parser.add_argument('--lr', type=float, default=1e-4, help='learning rate')
+    parser.add_argument('--lr', type=float, default=.1, help='learning rate')
 
     args = parser.parse_args()
     return args
@@ -56,7 +56,7 @@ def rollout(env: gym.Env, policies: policies.QPolicy, episodes: int, epsilon: fl
             ### TODO: Your code starts here:
             pi = policies(state, epsilon)
             # How do you select the action given pi. Hint: use np.random.choice
-            action = "?"
+            action = np.random.choice([i for i in range(env.action_space.n)],p=pi)
             ### Your code ends here.
             next_state, reward, done, _ = env.step(action)
             score += reward
