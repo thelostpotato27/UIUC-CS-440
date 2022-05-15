@@ -1,3 +1,4 @@
+from cmath import inf
 from distutils.file_util import move_file
 import math
 import chess.lib
@@ -60,11 +61,6 @@ def minimax(side, board, flags, depth):
 
     value, movelist, movetree = minimax_recursor(side, board, flags, depth, 0)
 
-    # value = return_val[0]
-    # movelist = return_val[1]
-    # movetree = return_val[2]
-
-    # print(movelist)
 
     return value, movelist, movetree
 
@@ -74,53 +70,35 @@ def minimax(side, board, flags, depth):
 def minimax_recursor(side, board, flags, depth, knight):
     if depth == 0:
         return evaluate(board), [], {}
-    
+
     if depth > 0:
-        comparator = {}
+        best_val = 0
+        if side:
+            best_val = inf
+        else:
+            best_val = -inf
+        best_move_list = []
         movetree = {}
-        
         for move in generateMoves(side, board, flags):
-            # print(move)
-            if move[0] == [2,1]:
-                knight = 1
-            else:
-                knight = 0
+
             encoded_move = encode(move[0], move[1], move[2])
             newside, newboard, newflags = makeMove(side, board, move[0], move[1], flags, move[2])
             value, movelist, movetree_component = minimax_recursor(newside, newboard, newflags, depth - 1, knight)
-            # print(movelist)
-            if movelist == []:
-                comparator[value] = [move]
+            movelist.insert(0,move)
+            if side:
+                if value < best_val:
+                    best_val = value
+                    best_move_list = movelist
             else:
-                movelist.insert(0, move)
-                # move.append(movelist)
-                if depth == 2:
-                    # if move[0][0] == [2,1]:
-                    #     print(value, move)
-                    if value == 5:
-                        print(value, movelist)
-                if value not in comparator:
-                    comparator[value] = movelist
-            # print("movelist")
-            # print(comparator[value])
-            # print("movelist")
+                if value > best_val:
+                    best_val = value
+                    best_move_list = movelist
 
-            # if move[0] == [2,1]:
-            #     print(comparator)
+
             movetree[encoded_move] = movetree_component
-        chosen_key = 0
-        if not side:
-            chosen_key = max(comparator)
-        else:
-            chosen_key = min(comparator)
-        if depth == 2:
-            print(comparator)
-            print(chosen_key)
-        # if knight == 1:
-            # print(comparator)
-            # print(chosen_key)
+        
 
-        return chosen_key, comparator[chosen_key], movetree
+        return best_val, best_move_list, movetree
 
 
 
@@ -140,65 +118,60 @@ def alphabeta(side, board, flags, depth, alpha=-math.inf, beta=math.inf):
     '''
 
     print(depth)
-    value, movelist, movetree, alpha, beta = alphabeta_recursor(side, board, flags, depth, alpha, beta)
+    value, movelist, movetree = alphabeta_recursor_min(side, board, flags, depth, alpha, beta)
 
     print(movelist)
 
     return value, movelist, movetree
     raise NotImplementedError("you need to write this!")
-    
 
-def alphabeta_recursor(side, board, flags, depth, alpha, beta):
+
+
+
+def alphabeta_recursor_max(side, board, flags, depth, alpha, beta):
     if depth == 0:
-        return evaluate(board), [], {}, alpha, beta
-    
+        return evaluate(board), [], {}
     if depth > 0:
         movetree = {}
-        movelist = []
-        value = 0
-        if side:
-            value = math.inf
-        else:
-            value = -math.inf
+        best_move_list = []
         for move in generateMoves(side, board, flags):
-            newside, newboard, newflags = makeMove(side, board, move[0], move[1], flags, move[2])
-            value_return, temp_movelist, movetree_part, alpha, beta = alphabeta_recursor(newside, newboard, newflags, depth -1, alpha, beta)
             encoded_move = encode(move[0], move[1], move[2])
-            movetree[encoded_move] = movetree_part
+            newside, newboard, newflags = makeMove(side, board, move[0], move[1], flags, move[2])
+            value, movelist, movetree_component = alphabeta_recursor_min(newside, newboard, newflags, depth-1, alpha, beta)
+            movetree[encoded_move] = movetree_component
+            movelist.insert(0,move)
+            if value >= beta:
+                return beta, movelist, movetree
+            if value > alpha:
+                alpha = value
+                best_move_list = movelist
+
+        return alpha, best_move_list, movetree
 
 
-            if side:
-                if value > value_return:
-                    value = value_return
-                    if movelist == []:
-                        movelist = [move]
-                    else:
-                        print("checks")
-                        temp_movelist.insert(0, move)
-                        movelist = temp_movelist
-                        print(movelist)
-                if beta > value_return:
-                    beta = value_return
-                else:
-                    break
-            else:
-                if value < value_return:
-                    value = value_return
-                    if movelist == []:
-                        movelist = [move]
-                    else:
-                        print("checks")
-                        temp_movelist.insert(0, move)
-                        movelist = temp_movelist
-                        print(movelist)
-                if alpha < value_return:
-                    alpha = value_return
-                else:
-                    break
-        print(movelist)
-        return value, movelist, movetree, alpha, beta
-            
-            
+
+
+def alphabeta_recursor_min(side, board, flags, depth, alpha, beta):
+    if depth == 0:
+        return evaluate(board), [], {}
+    if depth > 0:
+        movetree = {}
+        best_move_list = []
+        for move in generateMoves(side, board, flags):
+            encoded_move = encode(move[0], move[1], move[2])
+            newside, newboard, newflags = makeMove(side, board, move[0], move[1], flags, move[2])
+            value, movelist, movetree_component = alphabeta_recursor_max(newside, newboard, newflags, depth-1, alpha, beta)
+            movetree[encoded_move] = movetree_component
+            movelist.insert(0,move)
+            if value <= alpha:
+                return alpha, movelist, movetree
+            if value < beta:
+                beta = value
+                best_move_list = movelist
+
+        return beta, best_move_list, movetree
+
+
 
 
 def stochastic(side, board, flags, depth, breadth, chooser):
@@ -216,4 +189,51 @@ def stochastic(side, board, flags, depth, breadth, chooser):
       breadth: number of different paths 
       chooser: a function similar to random.choice, but during autograding, might not be random.
     '''
+    movetree = {}
+    best_movelist = []
+    best_val = 0
+    if side:
+        best_val = inf
+    else:
+        best_val = -inf
+    for move in generateMoves(side, board, flags):
+        encoded_move = encode(move[0], move[1], move[2])
+        newside, newboard, newflags = makeMove(side, board, move[0], move[1], flags, move[2])
+        value, movelist, movetree_component = stochastic_recurser(newside, newboard, newflags, depth-1, breadth, chooser)
+        movelist.insert(0,move)
+        movetree[encoded_move] = movetree_component
+        if side:
+            if value < best_val:
+                best_val = value
+                best_movelist = movelist
+        else:
+            if best_val < value:
+                best_val = value
+                best_movelist = movelist
+
+    return best_val, best_movelist, movetree
+
+
     raise NotImplementedError("you need to write this!")
+
+def stochastic_recurser(side, board, flags, depth, breadth, chooser):
+    if depth == 0 or breadth == 0:
+        return evaluate(board), [], {}
+    
+    if depth > 0:
+        movetree = {}
+        best_movelist = []
+        avg_val = 0
+        
+        moves = [ move for move in generateMoves(side, board, flags) ]
+        for i in range(breadth):
+            move = chooser(moves)
+            encoded_move = encode(move[0], move[1], move[2])
+            newside, newboard, newflags = makeMove(side, board, move[0], move[1], flags, move[2])
+            value, movelist, movetree_component = stochastic_recurser(newside, newboard, newflags, depth-1, breadth, chooser)
+            avg_val += value
+            movetree[encoded_move] = movetree_component
+            movelist.insert(0,move)
+            best_movelist = movelist
+        avg_val /= breadth
+        return avg_val, best_movelist, movetree
